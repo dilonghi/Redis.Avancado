@@ -1,7 +1,11 @@
+using Diego.Redis.WebApi.Context;
+using Diego.Redis.WebApi.Interface;
+using Diego.Redis.WebApi.Repositories;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -24,8 +28,15 @@ namespace Diego.Redis.WebApi
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
-        public void ConfigureServices(IServiceCollection services)
+        public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
         {
+            services.AddScoped<ApiDbContext>();
+            services.AddScoped<ITrajetoPrevistoRepository, TrajetoPrevistoRepository>();
+
+            //services.AddDbContext<ApiDbContext>(options =>
+            //{
+            //    options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+            //});
 
             services.AddControllers();
             services.AddSwaggerGen(c =>
