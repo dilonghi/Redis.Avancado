@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Diego.Redis.WebApi.Interface
 {
-    public interface ITrajetoPrevistoRepository
+    public interface ITrajetoPrevistoRepository 
     {
         Task PopularTabela();
     }

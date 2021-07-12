@@ -1,28 +1,20 @@
 ﻿using Diego.Redis.WebApi.Context;
 using Diego.Redis.WebApi.Interface;
 using Diego.Redis.WebApi.Models;
-using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Diego.Redis.WebApi.Repositories
 {
     public class TrajetoPrevistoRepository : ITrajetoPrevistoRepository
     {
-        protected readonly ApiDbContext Db;
-        protected readonly DbSet<TrajetoPrevisto> DbSet;
-
         // private readonly
-        public TrajetoPrevistoRepository(ApiDbContext db)
+        public TrajetoPrevistoRepository()
         {
-            Db = db;
-            DbSet = db.Set<TrajetoPrevisto>();
         }
 
-
+        
         public async Task PopularTabela()
         {
             var trajetoId = Guid.NewGuid();
@@ -51,10 +43,21 @@ namespace Diego.Redis.WebApi.Repositories
 
             };
 
-            await DbSet.AddAsync(trajeto);
-            await Db.SaveChangesAsync();
-            Db.ChangeTracker.Clear();
+            try
+            {
+                using var db = new ApiDbContext();
+                await db.TrajetoPrevisto.AddAsync(trajeto);
+                await db.SaveChangesAsync();
 
+                db.ChangeTracker.Clear();
+            }
+            catch(Exception ex)
+            {
+                var erro = ex.Message;
+            }
         }
+
+       
+
     }
 }

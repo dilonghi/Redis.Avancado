@@ -23,7 +23,8 @@ namespace Diego.Redis.WebApi.Controllers
 
             //Console.WriteLine("Criando a base ==============================");
 
-            //db.Database.EnsureCreated();
+            db.Database.EnsureDeleted();
+            db.Database.EnsureCreated();
 
             _trajetoPrevistoRepository.PopularTabela();
 
