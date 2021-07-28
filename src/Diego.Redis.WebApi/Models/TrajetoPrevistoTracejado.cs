@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json.Serialization;
 
 namespace Diego.Redis.WebApi.Models
 {
@@ -10,6 +11,8 @@ namespace Diego.Redis.WebApi.Models
         public decimal Longitude { get; set; }
         public int Ordem { get; set; }
         public TimeSpan Hora { get; set; }
-        public virtual TrajetoPrevisto TrajetoPrevisto { get; set; }
+
+       // [JsonIgnore]
+        //public virtual TrajetoPrevisto TrajetoPrevisto { get; set; }
     }
 }

@@ -1,21 +1,80 @@
 ﻿using Diego.Redis.WebApi.Context;
 using Diego.Redis.WebApi.Interface;
 using Diego.Redis.WebApi.Models;
+using Diego.Redis.WebApi.RedisService;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Diego.Redis.WebApi.Repositories
 {
     public class TrajetoPrevistoRepository : ITrajetoPrevistoRepository
     {
-        // private readonly
-        public TrajetoPrevistoRepository()
+        private readonly ICache _cache;
+
+        public TrajetoPrevistoRepository(ICache cache)
         {
+            _cache = cache;
         }
 
-        
-        public async Task PopularTabela()
+        public string[] ObterKeys(string filtro)
+        {
+            return _cache.GetKeys(filtro);
+        }
+
+        public async Task<TrajetoPrevisto> ObterTrajetoPorId(Guid id)
+        {
+            var trajetoKey = $"rotas:trajeto-{id}";
+
+            var trajetoCache = _cache.Get<TrajetoPrevisto>(trajetoKey);
+
+            //if (trajetoCache != null)
+            //    return trajetoCache;
+
+            using var db = new ApiDbContext();
+
+            var trajeto = await db.TrajetoPrevisto
+                .Include(x => x.Paradas)
+                .Include(x => x.Tracejados)
+                .AsNoTracking()
+                .Where(x => x.Id == id)
+                .FirstOrDefaultAsync();
+
+            _cache.Add(trajetoKey, trajeto, new TimeSpan(0, 5, 0));
+
+            return trajeto;
+        }
+
+        public async Task<TrajetoPrevisto> AdicionarListaParadas(Guid id)
+        {
+            var trajetoKey = $"rotas:trajeto-{id}-paradas";
+
+            using var db = new ApiDbContext();
+
+            var trajeto = await db.TrajetoPrevisto
+                .Include(x => x.Paradas)
+                .Include(x => x.Tracejados)
+                .AsNoTracking()
+                .Where(x => x.Id == id)
+                .FirstOrDefaultAsync();
+
+            _cache.Delete(trajetoKey);
+
+            _cache.AddList<TrajetoPrevistoParada>(trajetoKey, trajeto.Paradas.OrderBy(x=>x.Ordem));
+
+            return trajeto;
+        }
+
+        public IEnumerable<TrajetoPrevistoParada> ObterListaDEParadas(Guid id)
+        {
+            var trajetoKey = $"rotas:trajeto-{id}-paradas";
+            var result = _cache.GetList<TrajetoPrevistoParada>(trajetoKey);
+            return result;
+        }
+
+            public async Task PopularTabela()
         {
             var trajetoId = Guid.NewGuid();
 
@@ -49,15 +108,17 @@ namespace Diego.Redis.WebApi.Repositories
                 await db.TrajetoPrevisto.AddAsync(trajeto);
                 await db.SaveChangesAsync();
 
+                _cache.Add($"rotas:trajeto-{trajetoId}", trajeto, new TimeSpan(0, 5, 0));
+
                 db.ChangeTracker.Clear();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 var erro = ex.Message;
             }
         }
 
-       
+
 
     }
 }

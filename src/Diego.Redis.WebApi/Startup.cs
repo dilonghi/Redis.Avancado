@@ -1,19 +1,25 @@
 using Diego.Redis.WebApi.Context;
 using Diego.Redis.WebApi.Interface;
+using Diego.Redis.WebApi.RedisService;
 using Diego.Redis.WebApi.Repositories;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
+using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Diego.Redis.WebApi
@@ -33,12 +39,22 @@ namespace Diego.Redis.WebApi
             //services.AddScoped<ApiDbContext>();
             services.AddScoped<ITrajetoPrevistoRepository, TrajetoPrevistoRepository>();
 
-            //services.AddDbContext<ApiDbContext>(options =>
-            //{
-            //    options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
-            //});
+            //redis
+            services.Configure<ConnectionStringOptions>(Configuration.GetSection("ConnectionStrings"));
+            services.AddSingleton<IConnectionMultiplexer, ConnectionMultiplexer>(c =>
+                ConnectionMultiplexer.Connect(c.GetRequiredService<IOptions<ConnectionStringOptions>>().Value.Redis)
+            );
+            services.AddScoped<ICache, RedisCache>();
+            services.AddScoped<IMemoryCache, MemoryCache>();
 
-            services.AddControllers();
+
+            services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                });
+
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Diego.Redis.WebApi", Version = "v1" });
